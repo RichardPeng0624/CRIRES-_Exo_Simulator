@@ -115,8 +115,10 @@ class planet_para:
         
         if sky==True:
             self.disper_star+=self.disper_sky
+            
 
-        p_2_s_intr=self.disper_planet['dat_diff_0']/self.disper_star['dat_diff_0']
+        p_2_s_intr=np.float64(self.disper_planet['dat_diff_0']/self.disper_star['dat_diff_0'])
+        
         p_2_s_intr=np.log10(p_2_s_intr)
         p_2_s_intr[np.isinf(p_2_s_intr)]=np.nan
         
