@@ -1,10 +1,10 @@
 #The class focuses on processing theoretical spectra of planets.  
 class planet_para:
-    
+    '''
     #FORMAT SUPPORT:     
     #disper_planet, disper_star, disper_sky: pd.DataFrame
     #data_planet, data_star, data_sky: np.ndarray or pd.DataFrame
-    
+    '''
     def __init__(self, disper_planet=None, disper_star=None,\
                  data_planet=None, data_star=None, disper_sky=None, data_sky=None):
         
@@ -31,6 +31,8 @@ class planet_para:
         c1=None, c2=None,\
         airmass=None):
         
+        '''
+        #This function aims to calculate the color indexes of two given band for the spectrum.
         # band1_w, band2_w: two selected bands 
         # transmission1, transmission2: transmission profiles for the two bands
         # zero1, zero2: zero flux for two bands. ATTENZIONE: flux not magnitude!
@@ -39,7 +41,8 @@ class planet_para:
         # --- atmosphere: The default setting is 'False', means no atmospheric extinction is considered. 
         # --- c1, c2: atmospheric extinction coefficients
         # --- airmass: only need to be defined when you would like to calculate the atmospheric extinction.
-            
+        '''
+        
         if isinstance(self.data_planet, np.ndarray):
 
             wave = self.data_planet[0]
@@ -105,11 +108,12 @@ class planet_para:
         return (c_index, mag_1, mag_2, data_1, transmission_1, data_2, transmission_2)
     
     
-    #This function aims to calculate both the intrinsic and the in-situ planet-to-star flux ratio 
+    #----------------------
     def p_2_s (self,  order_num, plot=True, planet_posi= None, sky=False):
-        
+        '''
+        This function aims to calculate both the intrinsic and the in-situ planet-to-star flux ratio 
         #if planet position is setted as False, only intrinsic p2s ratio is calculated 
-        
+        '''
         font = {'size': 4}
         plt.rcParams.update({'font.size': font['size']})
         
@@ -235,10 +239,85 @@ class planet_para:
     
     def mag_convert(self, flux_ratio, stellar_mag, error_b=0., error_p=0.):
         
+        '''
+        This function aims to convert the apparent magnitude of the planet based on the flux contrast ratio measured from 
+        previous observations
+        # error_b, error_p: the bottom and upper limit of error bar
+        '''
+        
         error=np.array([error_b, error_p])
         planet_mag_p = stellar_mag - 2.5*np.log10(flux_ratio+error[1])
         planet_mag_b = stellar_mag - 2.5*np.log10(flux_ratio-error[0])
         planet_mag = stellar_mag - 2.5*np.log10(flux_ratio)
 
         return ([planet_mag_b, planet_mag, planet_mag_p])
+    
+    #-------------------
+    
+    def mag_direct(self, radius, distance, band=None, transmission=None, zero=None,\ 
+        atmosphere='False', c=None, airmass=None):
+                   
+        '''
+        --Convert the input paramters into CGS unit--
+
+        # radius, distance: parameters of the planet
+
+        # zero_point_flux: depending on the band and the photometric system, the suggestion is MKO potometric system.
+
+        # band: the band for computation of magnitude.
+
+        # spec_path: the path of input (theoretical) spectrum of the planet
+        '''
+
+        if isinstance(self.data_planet, np.ndarray):
+
+            wave = self.data_planet[0]
+            flux = self.data_planet[1]
+
+            mask=[(wave>band[0])&(wave<band[1])]
+
+            data_cut=np.array([self.data_planet[0][mask],self.data_planet[1][mask]])
+            transmission=np.interp(data[0], transmission[0], transmission[1])
+
+            int_flux= np.trapz(data_cut[1]*transmission, data_cut[0])/np.trapz(transmission, data_cut[0])
+
+
+
+        elif isinstance(self.data_planet, pd.DataFrame):
+
+            wave = self.data_planet['wave']
+            flux = self.data_planet['flux']
+
+            mask=[(wave>band[0])&(wave<band[1])]
+
+            data_cut=self.data_planet[mask]
+            transmission=np.interp(data_cut[0], transmission[0], transmission[1])
+
+            int_flux= np.trapz(data_cut.flux*transmission, data_cut.wave)/np.trapz(transmission,  data_cut.wave)
+
+        else:
+
+            print ('Sweet but dumb, we do not support this format. Choose one from np.ndarray or pd.DataFrame.')
+
+
+        c=scipy.constants.speed_of_light
+        pi=scipy.constants.pi
+
+        dist_ratio=(radius/distance)**2
+
+        F_rec=int_flux*dist_ratio
+
+
+        if atmosphere=='True':
+            mag=-2.5*np.log10(F_rec/zero)-c*(airmass-1)
+
+        else:
+
+            mag=-2.5*np.log10(F_rec/zero)
+
+
+
+        return (mag, int_flux, F_rec)    
+                   
+     
     
