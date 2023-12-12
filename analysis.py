@@ -63,8 +63,8 @@ class planet_para:
             wave = self.data_planet[0]
             flux = self.data_planet[1]
 
-            mask_1=[(wave>band1_w[0])&(wave<band1_w[1])]
-            mask_2=[(wave>band2_w[0])&(wave<band2_w[1])]
+            mask_1=np.array((wave>band1_w[0])&(wave<band1_w[1]))
+            mask_2=np.array((wave>band2_w[0])&(wave<band2_w[1]))
 
             data_1=np.array([self.data_planet[0][mask_1],self.data_planet[1][mask_1]])
             transmission_1=np.interp(data_1[0], transmission1[0], transmission1[1])
@@ -82,8 +82,8 @@ class planet_para:
             wave = self.data_planet['wave']
             flux = self.data_planet['flux']
 
-            mask_1=[(wave>band1_w[0])&(wave<band1_w[1])]
-            mask_2=[(wave>band2_w[0])&(wave<band2_w[1])]
+            mask_1=np.array((wave>band1_w[0])&(wave<band1_w[1]))
+            mask_2=np.array((wave>band2_w[0])&(wave<band2_w[1]))
 
             data_1=self.data_planet[mask_1]
             transmission_1=np.interp(data_1[0], transmission1[0], transmission1[1])
@@ -302,7 +302,7 @@ class planet_para:
             wave = self.data_planet['wave']
             flux = self.data_planet['flux']
 
-            mask=[(wave>band[0])&(wave<band[1])]
+            mask=np.array((wave>band[0])&(wave<band[1]))
 
             data_cut=self.data_planet[mask]
             transmission=np.interp(data_cut[0], transmission[0], transmission[1])
