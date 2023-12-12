@@ -1,0 +1,5 @@
+setup.py
+exocrires.egg-info/PKG-INFO
+exocrires.egg-info/SOURCES.txt
+exocrires.egg-info/dependency_links.txt
+exocrires.egg-info/top_level.txt
