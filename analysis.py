@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #The class focuses on processing theoretical spectra of planets.
 import glob
 import numpy as np
@@ -12,6 +13,9 @@ import json
 import subprocess
 import os
   
+=======
+#The class focuses on processing theoretical spectra of planets.  
+>>>>>>> e2accac87b1347dd5ae8fdc4d24f3d3022510a8e
 class planet_para:
     '''
     #FORMAT SUPPORT:     
@@ -267,7 +271,12 @@ class planet_para:
     
     #-------------------
     
+<<<<<<< HEAD
     def mag_direct(self, radius, distance, band=None, transmission=None, zero=None, atmosphere='False', c=None, airmass=None):
+=======
+    def mag_direct(self, radius, distance, band=None, transmission=None, zero=None,\ 
+        atmosphere='False', c=None, airmass=None):
+>>>>>>> e2accac87b1347dd5ae8fdc4d24f3d3022510a8e
                    
         '''
         --Convert the input paramters into CGS unit--
@@ -286,10 +295,17 @@ class planet_para:
             wave = self.data_planet[0]
             flux = self.data_planet[1]
 
+<<<<<<< HEAD
             mask=np.array((wave>band[0])&(wave<band[1]))
 
             data_cut=np.array([wave[mask],flux[mask]])
             transmission=np.interp(data_cut[0], transmission[0], transmission[1])
+=======
+            mask=[(wave>band[0])&(wave<band[1])]
+
+            data_cut=np.array([self.data_planet[0][mask],self.data_planet[1][mask]])
+            transmission=np.interp(data[0], transmission[0], transmission[1])
+>>>>>>> e2accac87b1347dd5ae8fdc4d24f3d3022510a8e
 
             int_flux= np.trapz(data_cut[1]*transmission, data_cut[0])/np.trapz(transmission, data_cut[0])
 
@@ -332,4 +348,8 @@ class planet_para:
         return (mag, int_flux, F_rec)    
                    
      
+<<<<<<< HEAD
     
+=======
+    
+>>>>>>> e2accac87b1347dd5ae8fdc4d24f3d3022510a8e
