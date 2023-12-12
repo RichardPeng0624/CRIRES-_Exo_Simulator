@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,8 +11,7 @@ import json
 import subprocess
 import os
 
-=======
->>>>>>> e2accac87b1347dd5ae8fdc4d24f3d3022510a8e
+
 class spectra_2d:
     
     #------------------
