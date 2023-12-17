@@ -252,7 +252,7 @@ class planet_para:
         
     #-------------------
     
-    def mag_convert(self, flux_ratio, stellar_mag, error_b=0., error_p=0.):
+    def mag_convert(self, flux_ratio, stellar_mag, error_b=0., error_p=0., flux=False, zero=None):
         
         '''
         This function aims to convert the apparent magnitude of the planet based on the flux contrast ratio measured from 
@@ -263,9 +263,18 @@ class planet_para:
         error=np.array([error_b, error_p])
         planet_mag_p = stellar_mag - 2.5*np.log10(flux_ratio+error[1])
         planet_mag_b = stellar_mag - 2.5*np.log10(flux_ratio-error[0])
-        planet_mag = stellar_mag - 2.5*np.log10(flux_ratio)
-
-        return ([planet_mag_b, planet_mag, planet_mag_p])
+        planet_mag = stellar_mag - 2.5*np.log10(flux_ratio)    
+        
+        if flux == True:
+        
+            planet_flux_p = zero*10**(-planet_mag_p/2.5)
+            planet_flux_b = zero*10**(-planet_mag_b/2.5)
+            planet_flux = zero*10**(-planet_mag/2.5)
+        
+            return ([[planet_mag_b, planet_mag, planet_mag_p, planet_flux_b], [planet_flux_b, planet_flux, planet_flax_p]])
+        else: 
+            return ([planet_mag_b, planet_mag, planet_mag_p])
+    
     
     #-------------------
     
