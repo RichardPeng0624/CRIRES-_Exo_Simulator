@@ -271,7 +271,7 @@ class planet_para:
             planet_flux_b = zero*10**(-planet_mag_b/2.5)
             planet_flux = zero*10**(-planet_mag/2.5)
         
-            return ([[planet_mag_b, planet_mag, planet_mag_p, planet_flux_b], [planet_flux_b, planet_flux, planet_flux_p]])
+            return ([[planet_mag_b, planet_mag, planet_mag_p], [planet_flux_b, planet_flux, planet_flux_p]])
         else: 
             return ([planet_mag_b, planet_mag, planet_mag_p])
     
