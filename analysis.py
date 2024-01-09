@@ -290,6 +290,8 @@ class planet_para:
         # band: the band for computation of magnitude.
 
         # spec_path: the path of input (theoretical) spectrum of the planet
+        
+        Return (apparent magnitude, integrated flux (*convolved with transimission profile*), received flux (*corrected by zero-point flux*) )
         '''
 
         if isinstance(self.data_planet, np.ndarray):
@@ -328,7 +330,7 @@ class planet_para:
 
         dist_ratio=(radius/distance)**2
 
-        F_rec=int_flux*dist_ratio
+        F_rec=4*np.pi*dist_ratio*int_flux
 
 
         if atmosphere=='True':
@@ -340,6 +342,6 @@ class planet_para:
 
 
 
-        return (mag, int_flux, F_rec)    
+        return (mag, int_flux, F_rec/zero)    
                    
      
