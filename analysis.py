@@ -258,6 +258,21 @@ class planet_para:
         This function aims to convert the apparent magnitude of the planet based on the flux contrast ratio measured from 
         previous observations
         # error_b, error_p: the bottom and upper limit of error bar
+        
+        # if flux=True and zero = None:
+        
+        Return ([[planet_mag_b, planet_mag, planet_mag_p],[planet_flux_b, planet_flux, planet_flux_p]])
+        planet_flux = F_received/F_zero
+        
+        # if flux=True and zero != None:
+        
+        Return ([[planet_mag_b, planet_mag, planet_mag_p],[planet_flux_b, planet_flux, planet_flux_p]])
+        planet_flux = F_received
+        
+        # if flux == Flase/None: 
+        
+        Return ([planet_mag_b, planet_mag, planet_mag_p])
+        
         '''
         
         error=np.array([error_b, error_p])
@@ -265,13 +280,22 @@ class planet_para:
         planet_mag_b = stellar_mag - 2.5*np.log10(flux_ratio-error[0])
         planet_mag = stellar_mag - 2.5*np.log10(flux_ratio)    
         
-        if flux == True:
+        if flux == True and zero == None:
         
+            planet_flux_p = 10**(-planet_mag_p/2.5)
+            planet_flux_b = 10**(-planet_mag_b/2.5)
+            planet_flux = 10**(-planet_mag/2.5)
+        
+            return ([[planet_mag_b, planet_mag, planet_mag_p], [planet_flux_b, planet_flux, planet_flux_p]])
+        
+        elif flux == True and zero != None:
+            
             planet_flux_p = zero*10**(-planet_mag_p/2.5)
             planet_flux_b = zero*10**(-planet_mag_b/2.5)
             planet_flux = zero*10**(-planet_mag/2.5)
         
             return ([[planet_mag_b, planet_mag, planet_mag_p], [planet_flux_b, planet_flux, planet_flux_p]])
+        
         else: 
             return ([planet_mag_b, planet_mag, planet_mag_p])
     
