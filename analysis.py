@@ -354,9 +354,9 @@ class planet_para:
         c=scipy.constants.speed_of_light
         pi=scipy.constants.pi
 
-        dist_ratio=(radius/distance)**2        
+        dist_ratio=(radius/distance)        
             
-        F_rec=solid_angle*dist_ratio*int_flux
+        F_rec=(solid_angle/4*np.pi)*np.square(dist_ratio)*int_flux
                     
 
         if atmosphere=='True':
