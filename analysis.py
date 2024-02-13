@@ -302,12 +302,14 @@ class planet_para:
     
     #-------------------
     
-    def mag_direct(self, radius, distance, band=None, transmission=None, zero=None, atmosphere='False', c=None, airmass=None):
+    def mag_direct(self, radius, distance, solid_angle, band=None, transmission=None, zero=None, atmosphere='False', c=None, airmass=None):
                    
         '''
         --Convert the input paramters into CGS unit--
 
         # radius, distance: parameters of the planet
+        
+        #solid angle: The format should follow n*np.pi, as the solid angle used in calculation of integrated flux
 
         # zero_point_flux: depending on the band and the photometric system, the suggestion is MKO potometric system.
 
@@ -352,10 +354,10 @@ class planet_para:
         c=scipy.constants.speed_of_light
         pi=scipy.constants.pi
 
-        dist_ratio=(radius/distance)**2
-
-        F_rec=4*np.pi*dist_ratio*int_flux
-
+        dist_ratio=(radius/distance)**2        
+            
+        F_rec=solid_angle*dist_ratio*int_flux
+                    
 
         if atmosphere=='True':
             mag=-2.5*np.log10(F_rec/zero)-c*(airmass-1)
