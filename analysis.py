@@ -356,7 +356,7 @@ class planet_para:
 
         dist_ratio=(radius/distance)        
             
-        F_rec=(solid_angle/4*np.pi)*np.square(dist_ratio)*int_flux
+        F_rec=(solid_angle/(4*np.pi))*np.square(dist_ratio)*int_flux
                     
 
         if atmosphere=='True':
