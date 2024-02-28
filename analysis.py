@@ -124,11 +124,34 @@ class planet_para:
     
     
     #----------------------
-    def p_2_s (self,  order_num, plot=True, planet_posi= None, sky=False):
+    def p_2_s (self, order_num, plot=True, planet_posi= None, sky=False):
         '''
-        This function aims to calculate both the intrinsic and the in-situ planet-to-star flux ratio 
-        #if planet position is setted as False, only intrinsic p2s ratio is calculated 
+        This function aims to calculate both the intrinsic and the in-situ planet-to-star flux ratio, at the position of the planet. 
+        
+        #planet_posi: (in pixel) The projected position of the planet from the star on the focal plane, in pixel.
+        #sky: If True, include the sky background and noise terms. Default is False
+        
+        #order_num: list, the series of the order numbers on CRIRES+. 
+        
+        #plot: If Ture, plot the contrast curves. Default is True
+        
+        
+        ## Return (p_2_s_intr, p_2_s_planet, fig, fig1) if plot == True and planet_posi!= None
+        fig: intrinsic contrast curve, 
+        fig1: in-situ contrast curve
+        p_2_s_intr: nd.array, intrinsic contrast array in log_10 scale, 
+        p_2_s_planet: nd.array, in-situ contrast array in log_10 scale
+        
+        ## Return (p_2_s_intr, p_2_s_planet, fig) if plot == True and planet_posi == None 
+  
+        
+        ## Return (p_2_s_intr, p_2_s_planet) if plot == None 
+        
+        
+        ##if planet position is setted as False, only intrinsic p2s ratio is calculated, p_2_s_planet=[]
+               
         '''
+        
         font = {'size': 4}
         plt.rcParams.update({'font.size': font['size']})
         
@@ -250,6 +273,50 @@ class planet_para:
             
             return (p_2_s_intr, p_2_s_planet)
         
+        
+    #-------------------
+    
+    def p_2_s_matrix(self, order_num, aperture, plot=True, planet_posi= None, sky=False):
+        
+        '''
+        This function aims to calculate both the intrinsic and the in-situ planet-to-star flux ratio, for the whole focal plane.
+        
+        #aperture: extraction aperture size
+        
+        #the spatial dimension size is calculated by: 1+(apeture_size - planet_position)*2
+        '''
+        
+        font = {'size': 4}
+        plt.rcParams.update({'font.size': font['size']})
+        
+        half_size=int(aperture//2)
+        
+        width=half_size-planet_posi
+            
+        flux_planet=self.disper_planet.loc[:,'dat_diff_0':'dat_diff_%s'%width]
+        flux_star=self.disper_star.loc[:,'dat_diff_%s'%planet_posi:'dat_diff_%s'%half_size]
+        
+        if sky==True:
+            flux_sky=self.disper_sky.loc[:,'dat_diff_%s'%planet_posi:'dat_diff_%s'%half_size]
+            flux_star+=flux_sky
+        
+        p_2_s=np.float64(flux_planet/(flux_star+flux_planet))
+        
+        contrast_plane=np.zeros(shape=(len(flux_planet),1+(width*2)))
+        
+        contrast_plane[width]=p_2_s[0]
+        contrast_plane[width+1:]=p_2_s[1:]
+        contrast_plane[0:width]=p_2_s[::-1][:-1]
+        
+        
+        p_2_s_matrix=np.log10(contrast_plane)
+        p_2_s_matrix[np.isinf(contrast_plane)]=np.nan
+        
+        return (p_2_s_matrix)
+        
+        
+        
+        
     #-------------------
     
     def mag_convert(self, flux_ratio, stellar_mag, error_b=0., error_p=0., flux=False, zero=None):
@@ -302,7 +369,7 @@ class planet_para:
     
     #-------------------
     
-    def mag_direct(self, radius, distance, solid_angle, band=None, transmission=None, zero=None, atmosphere='False', c=None, airmass=None):
+    def mag_direct(self, radius, distance, solid_angle, band=None, transmission=None, zero=None, atmosphere='False', c=None, airmass=None, extinction_mag_disk=None, extinction_mag_ISM=None):
                    
         '''
         --Convert the input paramters into CGS unit--
@@ -316,6 +383,10 @@ class planet_para:
         # band: the band for computation of magnitude.
 
         # spec_path: the path of input (theoretical) spectrum of the planet
+        
+        # extinction_mag_disk: (mag) extinction at the selected band from the disk materials 
+        
+        # extinction_mag_ISM: (mag) extinction at the selected band from the ISM 
         
         Return (apparent magnitude, integrated flux (*convolved with transimission profile*), received flux (*corrected by zero-point flux*) )
         '''
@@ -357,15 +428,20 @@ class planet_para:
         dist_ratio=(radius/distance)        
             
         F_rec=(solid_angle/(4*np.pi))*np.square(dist_ratio)*int_flux
+        
+        mag=-2.5*np.log10(F_rec/zero)
+        
+        if extinction_mag_disk == True:
+            
+            mag+=extinction_mag_disk
+            
+        if extinction_mag_ISM == True:
+            
+            mag+=extinction_mag_ISM
                     
-
-        if atmosphere=='True':
-            mag=-2.5*np.log10(F_rec/zero)-c*(airmass-1)
-
-        else:
-
-            mag=-2.5*np.log10(F_rec/zero)
-
+        if atmosphere == True:
+            
+            mag=mag-c*(airmass-1)
 
 
         return (mag, int_flux, F_rec/zero)    
