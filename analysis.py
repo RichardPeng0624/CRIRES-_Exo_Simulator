@@ -304,9 +304,9 @@ class planet_para:
         
         contrast_plane=np.zeros(shape=(len(flux_planet),1+(width*2)))
         
-        contrast_plane[width]=p_2_s[0]
-        contrast_plane[width+1:]=p_2_s[1:]
-        contrast_plane[0:width]=p_2_s[::-1][:-1]
+        contrast_plane[:,width]=p_2_s[:,0]
+        contrast_plane[:,width+1:]=p_2_s[:,1:]
+        contrast_plane[:,0:width]=p_2_s[:,::-1][:,:-1]
         
         
         p_2_s_matrix=np.log10(contrast_plane)
