@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='exocrires',
-    version='1.9',
+    version='1.95',
     packages=find_packages(),
     install_requires=[],
 )# List your dependencies here

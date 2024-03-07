@@ -276,41 +276,41 @@ class planet_para:
         
     #-------------------
     
-    def p_2_s_matrix(self, order_num, aperture, plot=True, planet_posi= None, sky=False):
+    def p_2_s_matrix(self, order_num, width, plot=True, planet_posi= None, sky=False):
         
         '''
         This function aims to calculate both the intrinsic and the in-situ planet-to-star flux ratio, for the whole focal plane.
         
-        #aperture: extraction aperture size
-        
-        #the spatial dimension size is calculated by: 1+(apeture_size - planet_position)*2
+        #width: spatial size of the contrast matrix 
+ 
         '''
         
         font = {'size': 4}
         plt.rcParams.update({'font.size': font['size']})
-        
-        half_size=int(aperture//2)
-        
-        width=half_size-planet_posi
+       
+    
+        print('width=', width)
             
-        flux_planet=self.disper_planet.loc[:,'dat_diff_0':'dat_diff_%s'%width]
-        flux_star=self.disper_star.loc[:,'dat_diff_%s'%planet_posi:'dat_diff_%s'%half_size]
+        flux_star=np.array(self.disper_star.loc[:,'dat_diff_%s'%(planet_posi-width):'dat_diff_%s'%(planet_posi+width)])
         
         if sky==True:
-            flux_sky=self.disper_sky.loc[:,'dat_diff_%s'%planet_posi:'dat_diff_%s'%half_size]
+            flux_sky=np.array(self.disper_sky.loc[:,'dat_diff_%s'%(planet_posi-width):'dat_diff_%s'%(planet_posi+width)])
             flux_star+=flux_sky
+         
+        flux_planet_half1=np.array(self.disper_planet.loc[:,'dat_diff_0':'dat_diff_%s'%width])
+        flux_planet_half2=flux_planet_half1[:,::-1][:,:-1]
+        flux_planet=np.append(flux_planet_half2, flux_planet_half1, axis=-1)
         
-        p_2_s=np.float64(flux_planet/(flux_star+flux_planet))
+        flux_tot=flux_star+flux_planet
         
-        contrast_plane=np.zeros(shape=(len(flux_planet),1+(width*2)))
+        p_2_s=np.float64(flux_planet/flux_tot)
         
-        contrast_plane[:,width]=p_2_s[:,0]
-        contrast_plane[:,width+1:]=p_2_s[:,1:]
-        contrast_plane[:,0:width]=p_2_s[:,::-1][:,:-1]
+        print('shape of the input data:', flux_planet.shape, flux_tot.shape, p_2_s.shape)
+        #print(p_2_s[0:10])
+                        
         
-        
-        p_2_s_matrix=np.log10(contrast_plane)
-        p_2_s_matrix[np.isinf(contrast_plane)]=np.nan
+        p_2_s_matrix=np.log10(p_2_s)
+        p_2_s_matrix[np.isinf(p_2_s_matrix)]=np.nan
         
         return (p_2_s_matrix)
         
