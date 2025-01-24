@@ -116,6 +116,7 @@ class spectra_2d:
         # ATTENZIONE: NOT ALL OUTPUT DATA CAN BE SUCCESSFULLY CONVERTED
         # Please check carefully for the .ascii files and if you can, just use .json
         '''
+        print ('Conversion from json to ascii starts')
 
         if self.target == "star":
 
@@ -391,21 +392,22 @@ class spectra_2d:
     #------------------
 
     def combine(self, data_star, data_p, \
-                plot_combination=None, d=None, sky=True, noise=True, data_sky=None,\
-                ron=None, dark=None, plane=None, ceil_percentage=None,\
+                plot_combination=None, d=None, star_posi=None, sky='Uniform', noise=True, data_sky=None,\
+                ron=None, dark=None, NDIT=None, plane=None, ceil_percentage=None,\
                  plot_save_path=None):
 
         '''
         This function works for combining all signals together in one plot to to simulate the observation.
 
         # data_star, data_p: the dataset of the whole focal plane for star and planet
-        # plot_combination: if plot the combination signal map or not,
-        # d: The projected separation
-        # sky: [True, False] if true, consider the sky contribution. The default is True.
-        # noise: [True, False] if true, consider the noise terms. The defalut is True.
+        # plot_combination: if plot the combination signal map or not. The default is not plotting
+        # d: The projected separation between the planet and the star
+        # star_posi: The position of the star on the spatial axis of the detector plane (could be used for nodding mode). The default position is the center of the spatial axis.
+        # sky: ['Uniform', 'Varation', False] if 'Uniform', consider the uniform sky background emission for the whole detector plane. The default is 'Uniform'.
+        # noise: [True, False] if true, consider the noise terms. The defalut is True. The noise is Poisson noise.
         # data_sky: The path the sky data.
-        # ron: read-out-noise value
-        # dark: value of dark counts
+        # ron: mean read-out-noise (lambda in a Poisson distribution)
+        # dark: mean value of dark counts
         # plane: the size of focal plane, (interger, interger). The defalut setting is to use the one from __init__
         # plot_save_path: the path to save plots
         '''
@@ -417,7 +419,7 @@ class spectra_2d:
 
             print('Stupid, you just passed a nonsense value to noise. It should be one from [None, True, False]')
 
-        if sky not in [True, False]:
+        if sky not in [False, 'Uniform', 'Variation']:
 
             print('Stupid, you just passed a nonsense value to sky contribution. It should be one from [None, True, False]')
 
@@ -431,15 +433,34 @@ class spectra_2d:
         if plane != None:
             self.focal_plane = np.zeros(shape=plane)
 
+        if star_posi == None:
+
+            central_pix=int(np.ceil(self.focal_plane.shape[0]/2))
+
+        else :
+            central_pix = star_posi
+
 
         row=len(self.order_num)
         pixel_posi=len(self.aperture_list)
 
-        signal_tot = np.zeros(shape=(row, self.focal_plane.shape[0], self.focal_plane.shape[1]))
-        signal_planet = np.zeros(shape=(row, 2, self.focal_plane.shape[1]))
+        if NDIT == None:
+            signal_tot = np.zeros(shape=(row, self.focal_plane.shape[0], self.focal_plane.shape[1]))
+
+        else:
+            signal_tot = np.zeros(shape=(row, NDIT, self.focal_plane.shape[0], self.focal_plane.shape[1]))
+
+        signal_stack = np.zeros(shape=(row, self.focal_plane.shape[0], self.focal_plane.shape[1]))
+
+        #if noise==True:
+        #exposure_series=np.zeros(shape=(N, row, focal_plane.shape[0], focal_plane.shape[1]))
 
         for n_order in range(row):
-            focal_plane = signal_tot[n_order]
+
+            if NDIT == None:
+                focal_plane = signal_tot[n_order]
+            else:
+                focal_plane = np.zeros(shape=plane)
 
             cons_plane = self.focal_plane
             cons_nnoise_plane = self.focal_plane
@@ -449,29 +470,26 @@ class spectra_2d:
             one_order_s=data_star.loc[(data_star['wavelength(nm)']<=order_w[n_order][1])&(data_star['wavelength(nm)']>=order_w[n_order][0])]
 
             one_order_p=data_p.loc[(data_p['wavelength(nm)']<=order_w[n_order][1])&(data_p['wavelength(nm)']>=order_w[n_order][0])]
-            if sky == True:
+
+            if sky == 'Uniform':
                 one_order_k=data_sky.loc[(data_sky['wavelength(nm)']<=order_w[n_order][1])&(data_sky['wavelength(nm)']>=order_w[n_order][0])]
 
-            central_pix=int(np.ceil(self.focal_plane.shape[0]/2))
+            #central_pix=int(np.ceil(self.focal_plane.shape[0]/2))
 
-            #flux at the center of PSF wings
+            #==flux at the central pixel of PSF wings==
 
             focal_plane[central_pix, 0:len(one_order_s)]=one_order_s['dat_diff_0']
             print(one_order_s['dat_diff_0'][0:10])
-            focal_plane[central_pix+d-1, 0:len(one_order_p)]=one_order_p['dat_diff_0']
+            focal_plane[central_pix+d, 0:len(one_order_p)]=one_order_p['dat_diff_0']
             print(one_order_p['dat_diff_0'][0:10])
 
 
-            if sky == True:
-                focal_plane[central_pix, 0:len(one_order_k)]+=(one_order_k['dat_diff_0'])
+            #if sky == True:
+            #focal_plane[central_pix, 0:len(one_order_k)]+=(one_order_k['dat_diff_0'])
 
-            if noise == True:
-                noi=ron+dark
-                focal_plane[central_pix, 0:len(one_order_k)]+=noi
+            print("The center of planet's PSF profile is set at pixel %s"%(central_pix+d))
 
-
-
-            print("The center of planet's PSF profile is set at pixel %s"%(central_pix+d-1))
+            #==Spread out following the PSF wings==
 
             for z in range(1, pixel_posi):
 
@@ -483,60 +501,96 @@ class spectra_2d:
                 focal_plane[loc_be,0:len(one_order_s)]+=one_order_s['dat_diff_%s'%z]
 
 
-                if sky == True:
-                    #add sky signal
-                    focal_plane[loc_up,0:len(one_order_k)]+=(one_order_k['dat_diff_%s'%z])
-                    focal_plane[loc_be,0:len(one_order_k)]+=(one_order_k['dat_diff_%s'%z])
-
-
-                if noise == True:
-                    #add noise
-                    noi=ron+dark
-                    focal_plane[loc_up,0:len(one_order_k)]+=noi
-                    focal_plane[loc_be,0:len(one_order_k)]+=noi
-
-
                 #add planet signal
                 if d+z <= pixel_posi:
-                    loc_up_p=central_pix+d-1+z
-                    loc_be_p=central_pix+d-1-z
+                    loc_up_p=central_pix+d+z
+                    loc_be_p=central_pix+d-z
                     focal_plane[loc_up_p,0:len(one_order_p)]+=one_order_p['dat_diff_%s'%z]
                     focal_plane[loc_be_p,0:len(one_order_p)]+=one_order_p['dat_diff_%s'%z]
 
+            #Add sky background
+            #Uniform sky: Generalize the sky background to all pixels
+            if sky == 'Uniform':
+                #add sky signal
+                one_order_k_re=np.tile(one_order_k['dat_diff_0'], (focal_plane.shape[0], 1))
+                focal_plane[:, 0:len(one_order_k)]+=(one_order_k_re)
 
-            #signal_tot[n_order]=focal_plane
-            signal_planet[n_order][0]=focal_plane[central_pix+d-1,:]
-            signal_planet[n_order][1]=focal_plane[central_pix-d+1,:]
+
+            #Add noise
+            if noise == True and NDIT != None:
+
+                N=NDIT
+
+                #add noise
+
+                #Photon noise: lambda=photon counts for each pxiel
+                Photon_series=np.array([np.random.poisson(lam=focal_plane) for _ in range(N)])
+
+                #Ron and Dark
+                Dark_series=np.array([np.random.poisson(lam=dark, size=focal_plane.shape) for _ in range(N)])
+                Readout_series=np.array([np.random.poisson(lam=ron, size=focal_plane.shape) for _ in range(N)])
+
+                signal_tot[n_order]=np.add(Photon_series, Dark_series, Readout_series)
+
+                signal_stack[n_order]=np.mean(signal_tot[n_order], axis=0)
+
+            elif noise == False and NDIT != None:
+
+                N=NDIT
+
+                Photon_series=np.array([focal_plane for _ in range(N)])
+
+                signal_tot[n_order]=Photon_series
+
+                signal_stack[n_order]=np.mean(signal_tot[n_order], axis=0)
+
+            elif noise == False and NDIT == None:
+
+                signal_tot[n_order] = focal_plane
+
+            else:
+
+                print ('NDIT cannot be none if noise added.')
+
+
+
 
         if plot_combination == True:
 
-            central_pix = focal_plane.shape[0]/2
             width = len(self.aperture_list)
 
             fig, axs=plt.subplots(row,1,dpi=200, sharex=True, sharey=True)
 
             for n_order in range(0, row):
 
-                ceil=np.percentile(focal_plane, ceil_percentage)
-                nor = ImageNormalize(focal_plane, interval= ZScaleInterval(contrast=0.2), vmax=ceil,vmin=np.min(focal_plane))
+                ceil=np.percentile(signal_stack[n_order], ceil_percentage)
+                nor = ImageNormalize(signal_stack[n_order], interval= ZScaleInterval(contrast=0.2), vmax=ceil,vmin=np.min(focal_plane))
 
                 ff=axs[n_order]
-                ff.imshow(signal_tot[n_order],norm=nor ,cmap='Greys_r')
-                ff.set_title('order%s: %s nm - %s nm'%(np.max(self.order_num)-n_order,order_w[n_order][0],order_w[n_order][1]),fontsize=5)
-                fig.colorbar(ff.imshow(signal_tot[n_order], norm=nor, cmap='Greys_r'), ax=axs[n_order], shrink=0.3, aspect=50, \
+                #if noise==True:
+                ff.imshow(signal_stack[n_order], norm=nor ,cmap='Greys_r')
+                fig.colorbar(ff.imshow(signal_stack[n_order], norm=nor, cmap='Greys_r'), ax=axs[n_order], shrink=0.3, aspect=50, \
                              location='bottom',pad=0.2)
+                #else:
+                #ff.imshow(signal_tot[n_order], norm=nor ,cmap='Greys_r')
+                #fig.colorbar(ff.imshow(signal_tot[n_order], norm=nor, cmap='Greys_r'), ax=axs[n_order], shrink=0.3, aspect=50, \
+                #location='bottom',pad=0.2)
 
-                ff.hlines(y=central_pix+d,xmin=0,xmax=focal_plane.shape[1],ls='--',colors='gray', linewidth=0.8)
+                ff.set_title('order%s: %s nm - %s nm mean_stacking'%(np.max(self.order_num)-n_order,order_w[n_order][0],order_w[n_order][1]),fontsize=5)
+
+
+                ff.hlines(y=central_pix+d,xmin=0,xmax=signal_stack[n_order].shape[1],ls='--',colors='gray', linewidth=0.8)
                 ff.axis('off')
                 ff.set_aspect(8)
                 ff.set_ylim(central_pix-width,central_pix+width)
 
             fig.subplots_adjust(hspace=1.3)
-            fig.suptitle('focal plane (%s*%s)\n$e^-$/pix/exposure'%(focal_plane.shape[0], focal_plane.shape[1]),\
+            fig.suptitle('focal plane (%s*%s)\n$e^-$/pix/exposure'%(signal_stack[n_order].shape[0], signal_stack[n_order].shape[1]),\
                          x=0.5,fontsize=9)
 
             plt.close()
-        return (signal_tot, signal_planet, fig)
+
+        return (signal_tot, signal_stack, fig)
 
 
 #-----------------------------------------
